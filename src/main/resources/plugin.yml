@@ -1,0 +1,14 @@
+name: GachiWorld
+version: ${project.version}
+main: ga.gachicode.GachiWorld
+api-version: 1.13
+authors: [oofxFrozen]
+description: simple vers of world edit
+website: gachicode.ga
+commands:
+  test:
+    description: kto
+    usage: ""
+  region:
+    description: Doing shit with ur region
+    usage: /region claim [name]
