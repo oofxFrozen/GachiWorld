@@ -7,7 +7,7 @@ import java.util.ArrayList;
 public class PrivateRegion {
 
     String owner, name;
-    ArrayList<String> officers, members;
+    ArrayList<String> officers, members = new ArrayList<>();
     int minX, minY, minZ,
             maxX, maxY, maxZ;
 
@@ -52,6 +52,7 @@ public class PrivateRegion {
             playersRegions = RegionManager.privateRegions.get(owner);
         }
         playersRegions.add(thisRegion);
+        this.addMember(owner);
         RegionManager.privateRegions.put(owner, playersRegions);
 
     }
@@ -79,7 +80,7 @@ public class PrivateRegion {
         int minX, minY, minZ,
                 maxX, maxY, maxZ;
 
-        boolean contains = false;
+        boolean contains;
 
         if (firstLocation.getBlockX() >= secondLocation.getBlockX()) {
             maxX = firstLocation.getBlockX();
@@ -158,7 +159,7 @@ public class PrivateRegion {
     }
     public boolean containsPrivate(int maxX, int maxY, int maxZ, int minX, int minY, int minZ) {
 
-        boolean contains = false;
+        boolean contains;
 
         ArrayList<BlockByCoords> check = new ArrayList<>();
         ArrayList<BlockByCoords> main = new ArrayList<>();

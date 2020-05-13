@@ -1,5 +1,6 @@
 package ga.gachicode;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,11 +13,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 
 public class RegionManager implements Listener, CommandExecutor {
 
@@ -83,6 +87,24 @@ public class RegionManager implements Listener, CommandExecutor {
     }
 
     @EventHandler
+    public void pvpDelete (EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player)) return;
+        Player player = (Player) event.getDamager();
+        Location location = event.getEntity().getWorld().getBlockAt(event.getEntity().getLocation()).getLocation();
+        for (ArrayList<PrivateRegion> regionArrayList : privateRegions.values()) {
+            for (PrivateRegion region : regionArrayList) {
+                if (region.containsBlock(location)) {
+                    if (region.getOwner().equals(player.getName())) {
+                        return;
+                    } else {
+                        event.setCancelled(true);
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
     public void blockUseCheck (PlayerInteractEvent event) {
         if (event.getClickedBlock() == null || event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Player player = event.getPlayer();
@@ -91,6 +113,23 @@ public class RegionManager implements Listener, CommandExecutor {
             for (PrivateRegion region : regionArrayList) {
                 if (region.containsBlock(location)) {
                     if (region.getOwner().equals(player.getName())) {
+                        return;
+                    } else {
+                        event.setCancelled(true);
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void playerEnterRegionCheck (PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        Location location = event.getTo().getBlock().getLocation();
+        for (ArrayList<PrivateRegion> regionArrayList : privateRegions.values()) {
+            for (PrivateRegion region : regionArrayList) {
+                if (region.containsBlock(location)) {
+                    if (region.getOwner().equals(player.getName()) || region.getMembers().contains(player.getName())) {
                         return;
                     } else {
                         event.setCancelled(true);
@@ -116,10 +155,10 @@ public class RegionManager implements Listener, CommandExecutor {
         return true;
     }
 
-    public boolean deleteRegion (String name) {
+    public boolean deleteRegion (String owner, String name) {
         for (ArrayList<PrivateRegion> list : privateRegions.values()) {
             for (PrivateRegion region : list) {
-                if (region.getName().equals(name)) {
+                if (region.getName().equals(name) && (region.getOwner().equals(owner) || Objects.requireNonNull(Bukkit.getServer().getPlayer(owner)).isOp())) {
                     privateRegions.get(region.getOwner()).remove(region);
                     regionNames.remove(name);
                     return true;
@@ -140,20 +179,43 @@ public class RegionManager implements Listener, CommandExecutor {
                         player.sendMessage(ChatColor.RED + "Прежде чем создавать регион, выделите территорию под него!");
                     }
                     if (canPrivate(player.getName(), args[1])) {
-                        PrivateRegion privateRegion = new PrivateRegion(player.getName(), args[1], currentRegions.get(player.getName()).getFirstLocation(), currentRegions.get(player.getName()).getSecondLocation());
+                        new PrivateRegion(player.getName(), args[1], currentRegions.get(player.getName()).getFirstLocation(), currentRegions.get(player.getName()).getSecondLocation());
                         player.sendMessage(ChatColor.GREEN + "Регион успешно создан!");
                     } else {
                         player.sendMessage(ChatColor.RED + "Регион пересекается с другим регионом, или уже существует регион с таким же именем!");
                     }
                 }
                 if (args[0].equals("delete")) {
-                    if (deleteRegion(args[1])) {
+                    if (deleteRegion(player.getName(), args[1])) {
                         player.sendMessage(ChatColor.GREEN + "Регион успешно удален!");
                     } else {
                         player.sendMessage(ChatColor.RED + "Такой регион не существует или не принадлежит вам!");
                     }
                 }
                 break;
+            case 3:
+                if (args[0].equals("addmember")) {
+                    for (PrivateRegion region : privateRegions.get(player.getName())) {
+                        if (region.getName().equals(args[1])) {
+                            region.addMember(args[2]);
+                            player.sendMessage(ChatColor.GREEN + "Игрок с ником " + args[2] + " был успешно добавлен в список участников.");
+                            return true;
+                        }
+                    }
+                    player.sendMessage(ChatColor.RED + "Такого региона не существует или Вы не являетесь его владельцем.");
+                    return true;
+                }
+                if (args[0].equals("addofficer")) {
+                    for (PrivateRegion region : privateRegions.get(player.getName())) {
+                        if (region.getName().equals(args[1])) {
+                            region.addOfficer(args[2]);
+                            player.sendMessage(ChatColor.GREEN + "Игрок с ником " + args[2] + " был успешно добавлен в список офицеров.");
+                            return true;
+                        }
+                    }
+                    player.sendMessage(ChatColor.RED + "Такого региона не существует или Вы не являетесь его владельцем.");
+                    return true;
+                }
             default:
                 player.sendMessage(ChatColor.RED + "Недопустимое количество аргументов.");
                 break;
