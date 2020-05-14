@@ -59,7 +59,7 @@ public class RegionManager implements Listener, CommandExecutor {
         for (ArrayList<PrivateRegion> regionArrayList : privateRegions.values()) {
             for (PrivateRegion region : regionArrayList) {
                 if (region.containsBlock(location)) {
-                    if (region.getOwner().equals(player.getName())) {
+                    if (region.BREAK_FLAG || region.getMembers().contains(player.getName()) || region.getOwner().equals(player.getName())) {
                         return;
                     } else {
                         event.setCancelled(true);
@@ -76,7 +76,7 @@ public class RegionManager implements Listener, CommandExecutor {
         for (ArrayList<PrivateRegion> regionArrayList : privateRegions.values()) {
             for (PrivateRegion region : regionArrayList) {
                 if (region.containsBlock(location)) {
-                    if (region.getOwner().equals(player.getName())) {
+                    if (region.PLACE_FLAG || region.getMembers().contains(player.getName()) || region.getOwner().equals(player.getName())) {
                         return;
                     } else {
                         event.setCancelled(true);
@@ -89,12 +89,14 @@ public class RegionManager implements Listener, CommandExecutor {
     @EventHandler
     public void pvpDelete (EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player)) return;
+        if (!(event.getEntity() instanceof Player)) return;
         Player player = (Player) event.getDamager();
+        Player damaged = (Player) event.getEntity();
         Location location = event.getEntity().getWorld().getBlockAt(event.getEntity().getLocation()).getLocation();
         for (ArrayList<PrivateRegion> regionArrayList : privateRegions.values()) {
             for (PrivateRegion region : regionArrayList) {
                 if (region.containsBlock(location)) {
-                    if (region.getOwner().equals(player.getName())) {
+                    if (region.PVP_FLAG || ((region.getOfficers().contains(player.getName()) || region.getOwner().equals(player.getName())) && !region.getMembers().contains(damaged.getName()))) {
                         return;
                     } else {
                         event.setCancelled(true);
@@ -112,7 +114,7 @@ public class RegionManager implements Listener, CommandExecutor {
         for (ArrayList<PrivateRegion> regionArrayList : privateRegions.values()) {
             for (PrivateRegion region : regionArrayList) {
                 if (region.containsBlock(location)) {
-                    if (region.getOwner().equals(player.getName())) {
+                    if (region.USE_FLAG || region.getMembers().contains(player.getName()) || region.getOwner().equals(player.getName())) {
                         return;
                     } else {
                         event.setCancelled(true);
@@ -129,7 +131,7 @@ public class RegionManager implements Listener, CommandExecutor {
         for (ArrayList<PrivateRegion> regionArrayList : privateRegions.values()) {
             for (PrivateRegion region : regionArrayList) {
                 if (region.containsBlock(location)) {
-                    if (region.getOwner().equals(player.getName()) || region.getMembers().contains(player.getName())) {
+                    if (region.MOVE_FLAG || region.getOwner().equals(player.getName()) || region.getMembers().contains(player.getName())) {
                         return;
                     } else {
                         event.setCancelled(true);
@@ -139,7 +141,7 @@ public class RegionManager implements Listener, CommandExecutor {
         }
     }
 
-    public boolean canPrivate (String player, String name) {
+    public static boolean canPrivate (String player, String name) {
         boolean contains;
         if (regionNames.contains(name)) {
             return false;
@@ -155,7 +157,7 @@ public class RegionManager implements Listener, CommandExecutor {
         return true;
     }
 
-    public boolean deleteRegion (String owner, String name) {
+    public static boolean deleteRegion (String owner, String name) {
         for (ArrayList<PrivateRegion> list : privateRegions.values()) {
             for (PrivateRegion region : list) {
                 if (region.getName().equals(name) && (region.getOwner().equals(owner) || Objects.requireNonNull(Bukkit.getServer().getPlayer(owner)).isOp())) {
@@ -210,6 +212,44 @@ public class RegionManager implements Listener, CommandExecutor {
                         if (region.getName().equals(args[1])) {
                             region.addOfficer(args[2]);
                             player.sendMessage(ChatColor.GREEN + "Игрок с ником " + args[2] + " был успешно добавлен в список офицеров.");
+                            return true;
+                        }
+                    }
+                    player.sendMessage(ChatColor.RED + "Такого региона не существует или Вы не являетесь его владельцем.");
+                    return true;
+                }
+                break;
+            case 4:
+                if (args[0].equals("flag")) {
+                    for (PrivateRegion region : privateRegions.get(player.getName())) {
+                        if (region.getName().equals(args[1])) {
+                            boolean flagValue = Boolean.parseBoolean(args[3]);
+                            switch (args[2]) {
+                                case "pvp":
+                                    region.PVP_FLAG = flagValue;
+                                    player.sendMessage(ChatColor.GRAY + "Значение флага <" + args[2] + "> региона <" + args[1] +"> изменено на " + flagValue);
+                                    break;
+                                case "move":
+                                    region.MOVE_FLAG = flagValue;
+                                    player.sendMessage(ChatColor.GRAY + "Значение флага <" + args[2] + "> региона <" + args[1] +"> изменено на " + flagValue);
+                                    break;
+                                case "place":
+                                    region.PLACE_FLAG = flagValue;
+                                    player.sendMessage(ChatColor.GRAY + "Значение флага <" + args[2] + "> региона <" + args[1] +"> изменено на " + flagValue);
+                                    break;
+                                case "use":
+                                    region.USE_FLAG = flagValue;
+                                    player.sendMessage(ChatColor.GRAY + "Значение флага <" + args[2] + "> региона <" + args[1] +"> изменено на " + flagValue);
+                                    break;
+                                case "break":
+                                    region.BREAK_FLAG = flagValue;
+                                    player.sendMessage(ChatColor.GRAY + "Значение флага <" + args[2] + "> региона <" + args[1] +"> изменено на " + flagValue);
+                                    break;
+                                default:
+                                    player.sendMessage(ChatColor.RED + "Такого флага не существует.");
+                                    break;
+                            }
+
                             return true;
                         }
                     }

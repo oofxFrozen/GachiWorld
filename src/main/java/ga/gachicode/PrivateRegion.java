@@ -2,14 +2,17 @@ package ga.gachicode;
 
 import org.bukkit.Location;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class PrivateRegion {
+public class PrivateRegion implements Serializable {
 
     String owner, name;
     ArrayList<String> officers, members = new ArrayList<>();
     int minX, minY, minZ,
             maxX, maxY, maxZ;
+
+    boolean PVP_FLAG = false, MOVE_FLAG = true, PLACE_FLAG = false, USE_FLAG = false, BREAK_FLAG = false;
 
     PrivateRegion thisRegion = this;
 
